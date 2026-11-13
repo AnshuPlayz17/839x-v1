@@ -36,7 +36,30 @@ int selectedAuton = 0;
 
 // Brain screen: tap the RIGHT half for the next auton, LEFT half to go back.
 // Also shows the elevator, wrist and where the robot is.
+// Measuring build screen (MEASURE_MODE in robot_config.hpp).
+// Move things by hand and write these numbers down.
+void measureScreenLoop() {
+  while (true) {
+    pros::screen::print(pros::E_TEXT_MEDIUM, 0, "839X  BUILD %d   MEASURING BUILD", BUILD_NUMBER);
+    pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Elevator + wrist are OFF. Move by hand.");
+    pros::screen::print(pros::E_TEXT_MEDIUM, 3, "ELEVATOR E %6.0f  (motors %6.0f %6.0f)  ",
+                        mech::liftDeg(), Lift.get_position(0), Lift.get_position(1));
+    pros::screen::print(pros::E_TEXT_MEDIUM, 4, "WRIST W %6.1f  (motor %6.0f)   ", mech::wristDeg(),
+                        Wrist.get_position());
+    pros::screen::print(pros::E_TEXT_MEDIUM, 5, "TRACKING WHEEL %8.1f deg   ",
+                        VerticalEncoder.get_position() / 100.0);
+    pros::screen::print(pros::E_TEXT_MEDIUM, 6, "DRIVE LEFT %7.0f  RIGHT %7.0f deg   ",
+                        LeftDrive.get_position(0), RightDrive.get_position(0));
+    pros::screen::print(pros::E_TEXT_MEDIUM, 7, "HEADING %6.1f   BATTERY %3.0f%%   ",
+                        chassis.getPose().theta, pros::battery::get_capacity());
+    pros::screen::print(pros::E_TEXT_MEDIUM, 9, "A: zero tracking + drive");
+    pros::screen::print(pros::E_TEXT_MEDIUM, 10, "UP + DOWN 1 s: zero elevator + wrist");
+    pros::delay(100);
+  }
+}
+
 void screenLoop() {
+  if (MEASURE_MODE) measureScreenLoop();  // never comes back
   int lastPress = pros::screen::touch_status().press_count;
   while (true) {
     const pros::screen_touch_status_s_t touch = pros::screen::touch_status();
@@ -108,6 +131,7 @@ void disabled() { mech::stopSteps(); }
 void competition_initialize() {}
 
 void autonomous() {
+  if (MEASURE_MODE) return;  // measuring build: no autons
   AUTONS[selectedAuton].run();
 }
 
@@ -133,7 +157,14 @@ void opcontrol() {
     // ---------- Buttons (press once) ----------
     if (Controller1.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) mech::grab();
     if (Controller1.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) mech::score();
-    if (Controller1.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) mech::cancel();
+    if (Controller1.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+      mech::cancel();
+      if (MEASURE_MODE) {  // measuring build: A zeroes the tracking wheel and drive counts
+        VerticalEncoder.reset_position();
+        LeftDrive.tare_position_all();
+        RightDrive.tare_position_all();
+      }
+    }
     const bool r1 = Controller1.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
     const bool r2 = Controller1.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
     mech::manualLift(r1 == r2 ? 0 : (r1 ? 1 : -1));

@@ -20,6 +20,10 @@ Robot code for 839X. PROS 4 + LemLib. Game: Override.
 - Keep it still while it calibrates.
 - Check the build number on the brain screen.
 
+## Measuring build
+
+`MEASURE_MODE` in `include/robot_config.hpp` is `true` right now: the elevator, wrist, intake and grabber motors stay off and autons do not run. The brain screen shows the numbers to write down. Set it to `false` only after every `GUESS` in that file has a real number.
+
 ## Autons
 
 1. **Red: toggle + 3 stacks**: bottom toggle, preload, then two field stacks on the red goal

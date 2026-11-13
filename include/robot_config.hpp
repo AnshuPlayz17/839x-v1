@@ -4,13 +4,16 @@
 #include "lemlib/api.hpp"
 
 // ============================================================
-// !!!!  PLACEHOLDER FILE  !!!!
-// 839X's real robot_config.hpp was not in the upload, so this one was
-// rebuilt from the .cpp files. Numbers marked GUESS are NOT the team's
-// numbers. Do not run the elevator or wrist with this file: replace it
-// with the team's real robot_config.hpp first.
-// Numbers marked FROM CODE were found in comments in the team's .cpp files.
+// 839X's real robot_config.hpp was lost, so this file was rebuilt.
+//   FROM CODE = found in comments in the team's .cpp files.
+//   GUESS     = NOT the team's number. Measure it and replace it.
+//
+// MEASURE_MODE = true: the elevator, wrist, intake and grabber motors
+// stay OFF and autons do not run. Move the elevator and wrist by hand and
+// read the numbers on the brain screen. Driving with the sticks still works.
+// Only set it to false once every GUESS below has a real number.
 // ============================================================
+constexpr bool MEASURE_MODE = true;
 
 // ---------- Devices (ports are in src/robot_config.cpp) ----------
 extern pros::Controller Controller1;

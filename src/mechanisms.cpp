@@ -332,6 +332,13 @@ void init() {
   Grabber.set_brake_mode(pros::MotorBrake::brake);
   Lift.tare_position_all();
   Wrist.tare_position();
+  if (MEASURE_MODE) {
+    // Measuring build: motors off and loose, so they can be moved by hand.
+    // The background loop never starts, so nothing here can move.
+    Lift.set_brake_mode_all(pros::MotorBrake::coast);
+    Wrist.set_brake_mode(pros::MotorBrake::coast);
+    return;
+  }
   static pros::Task mechTask(task);
 }
 
