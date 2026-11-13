@@ -145,11 +145,13 @@ void scoreAndClear(double dipDeg = STACK_DROP_DIP_DEG) {
   liftClear();
 }
 
-// Toggle, score the preload, then the UPPER and LOWER stacks, all on the red goal.
+constexpr double PRELOAD_CLEAR_IN = 8;  // drive this far off the goal after the preload (was a plain 8)
+
+// First half: toggle, then the preload on the red goal.
 // Every move is stop, turn, then drive straight.
-void toggleStacks() {
+void togglePreload() {
   // Front (toggle) facing the toggle on the south wall.
-  startAt(0, -62.7, 180);
+  startAt(START_X, START_Y, START_HEADING);  // 0, -62.7, 180
 
   // Toggle: two hits. Ram it, back off.
   for (int hit = 1; hit <= 2; hit++) {
@@ -165,8 +167,12 @@ void toggleStacks() {
   turnTo(PRELOAD_HEADING, AUTON_PCT);  // one turn, then straight back to the goal
   backUpTo(GOAL_X, GOAL_Y, AUTON_PCT, PRELOAD_BACK_EXTRA_IN);
   scoreAndClear(PRELOAD_DIP_DEG);  // preload: elevator down a bit, then let go
-  drive(8, AUTON_PCT);  // clear of the scored stack
+  drive(PRELOAD_CLEAR_IN, AUTON_PCT);  // clear of the scored stack
+}
 
+// Second half: the UPPER and LOWER stacks onto the red goal.
+// Starts where togglePreload() ends.
+void twoStacks() {
   // UPPER stack.
   grabberTo(UPPER_X - UPPER_FIX_IN, UPPER_Y, AUTON_PCT);
   fieldGrab(UPPER_GRAB_DEG);
@@ -186,6 +192,135 @@ void toggleStacks() {
   grabberTo(GOAL_X, GOAL_Y, AUTON_PCT, LOWER_BACK_EXTRA_IN);
   scoreAndClear();
   drive(4, AUTON_PCT);  // clear, then stop
+}
+
+// Toggle, score the preload, then the UPPER and LOWER stacks, all on the red goal.
+void toggleStacks() {
+  togglePreload();
+  twoStacks();
+}
+
+// ============================================================
+// SKILLS (60 seconds)
+//
+// Parts 1 and 2 are the red auton above. Then loader trips:
+//   Part 3: loader -> pin + cup onto the red goal (its 4th, from max height)
+//   Part 4: loader -> bare pin onto the tall goal, and park there
+// Each part is in the auton list so it can be tested by itself.
+// "Skills: ALL" runs them in order and skips part 3 if time is short.
+//
+// NOT TESTED. Every number marked MEASURE is a guess until the team measures it.
+// ============================================================
+
+// ---------- Loader (bottom-left, on the left wall) ----------
+constexpr double LOADER_X = -66;      // MEASURE: the loader's face
+constexpr double LOADER_Y = -59.7;    // MEASURE
+constexpr double LOADER_HEADING = 270;  // front faces the left wall
+// Where the robot's CENTER sits when its front touches the loader.
+constexpr double LOADER_SPOT_X = LOADER_X + FRONT_OFFSET_IN;
+constexpr double LOADER_STANDOFF_IN = 4;  // curve to this far short of the loader, then creep in
+constexpr double LOADER_LEAD = 0.4;   // how round the curve into the loader is (0.3 tight - 0.6 wide)
+constexpr double LOADER_CREEP_PCT = 40;  // speed for the last few inches into the loader
+constexpr int LOADER_WAIT_MS = 2000;  // time for the loader person to put the pieces in
+// Back out this far before turning: at the loader the robot's corner would
+// hit the bottom wall if it turned on the spot.
+constexpr double LOADER_BACK_IN = 3;  // MEASURE
+
+// ---------- Tall goal ----------
+constexpr double TALL_X = 0, TALL_Y = 0;
+// Drive (grabber first) to here before backing onto the tall goal. It is on the
+// diagonal, halfway between the two red goals, 7.7 in clear of each for an 18 in robot.
+constexpr double DIAGONAL_X = -1.5 * TILE, DIAGONAL_Y = -1.5 * TILE;
+
+// ---------- Clock ----------
+constexpr int SKILLS_MS = 59500;     // stop starting new things after this
+constexpr int PART3_NEEDS_MS = 10000;  // MEASURE: time part 3 takes (time it on the robot)
+constexpr int PART4_NEEDS_MS = 11000;  // MEASURE: time part 4 takes
+std::uint32_t skillsStart = 0;
+int skillsElapsed() { return static_cast<int>(pros::millis() - skillsStart); }
+
+// Curve to the loader and push the front against it.
+void toLoader() {
+  mech::home();  // elevator, then wrist, back down on the way
+  chassis.moveToPose(LOADER_SPOT_X + LOADER_STANDOFF_IN, LOADER_Y, LOADER_HEADING, 3000,
+                     {.lead = static_cast<float>(LOADER_LEAD), .maxSpeed = speed(AUTON_PCT)}, false);
+  drive(LOADER_STANDOFF_IN + 1, LOADER_CREEP_PCT, 800);  // creep in until it touches
+}
+
+// At the loader: take the pieces in, then grab them (same as holding L1, then Y).
+// CHECK: this guesses that loader pieces come in through the front intake.
+void loaderPickup() {
+  mech::waitUntilDone(2000);  // elevator and wrist down first
+  mech::setIntake(1);
+  pros::delay(LOADER_WAIT_MS);
+  mech::setIntake(0);
+  mech::grab();
+  mech::waitUntilDone(4000);
+}
+
+// Part 3: loader -> red goal, straight back about 25 in.
+// Load a pin, then a cup. The red goal must already have 3 on it.
+void loaderToGoal() {
+  loaderPickup();
+  drive(-LOADER_BACK_IN, AUTON_PCT);
+  mech::liftTo(SCORE_MAX_DEG);  // going up while it turns and backs in
+  grabberTo(GOAL_X, GOAL_Y, AUTON_PCT);
+  mech::waitUntilDone(2000);
+  scoreAndClear();
+  drive(4, AUTON_PCT);
+}
+
+// Part 4: loader -> tall goal, and stay there (parked in the midfield).
+// Load one bare red/yellow pin.
+void loaderToTall() {
+  loaderPickup();
+  drive(-LOADER_BACK_IN, AUTON_PCT);
+  mech::liftTo(SCORE_MID_DEG);
+  turnBackTo(DIAGONAL_X, DIAGONAL_Y, AUTON_PCT);
+  goTo(DIAGONAL_X, DIAGONAL_Y, false, AUTON_PCT, 3000);
+  grabberTo(TALL_X, TALL_Y, AUTON_PCT);
+  mech::waitUntilDone(2000);
+  mech::score(false, STACK_DROP_DIP_DEG);
+  mech::waitUntilDone(3000);
+  // No driving after this: the robot has to end in the midfield.
+}
+
+// ---------- The parts, each with its own start spot ----------
+
+// Start: front on the bottom toggle, preload in the grabber.
+void skillsPart1() { togglePreload(); }
+
+// Start: where part 1 ends. Back toward the red goal (preload on it), facing right.
+void skillsPart2() {
+  startAt(GOAL_X + GRABBER_OFFSET_IN - PRELOAD_BACK_EXTRA_IN + PRELOAD_CLEAR_IN, PRELOAD_TURN_Y,
+          PRELOAD_HEADING);
+  twoStacks();
+}
+
+// Start: front touching the loader. The LOWER stack must be gone.
+void skillsPart3() {
+  startAt(LOADER_SPOT_X, LOADER_Y, LOADER_HEADING);
+  loaderToGoal();
+}
+
+// Start: front touching the loader.
+void skillsPart4() {
+  startAt(LOADER_SPOT_X, LOADER_Y, LOADER_HEADING);
+  loaderToTall();
+}
+
+// Everything. Start: same as part 1.
+void skillsAll() {
+  skillsStart = pros::millis();
+  togglePreload();
+  twoStacks();
+  toLoader();
+  // Part 3 is optional: only if there is time for it AND for part 4.
+  if (skillsElapsed() + PART3_NEEDS_MS + PART4_NEEDS_MS < SKILLS_MS) {
+    loaderToGoal();
+    toLoader();
+  }
+  loaderToTall();
 }
 
 // ============================================================
@@ -235,6 +370,11 @@ void tuneTurn() {
 // Tap the brain screen to pick another.
 const Auton AUTONS[] = {
     {"Red: toggle + 3 stacks", toggleStacks},
+    {"Skills: ALL", skillsAll},
+    {"Skills 1: toggle+preload", skillsPart1},
+    {"Skills 2: two stacks", skillsPart2},
+    {"Skills 3: loader>goal", skillsPart3},
+    {"Skills 4: tall goal+park", skillsPart4},
     {"Tune: drive 24in", tuneDrive},
     {"Tune: turn 90", tuneTurn},
 };

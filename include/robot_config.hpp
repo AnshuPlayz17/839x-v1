@@ -34,6 +34,7 @@ constexpr double DRIVE_WHEEL_RPM = 450;     // GUESS: wheel speed after the gear
 constexpr double TRACKING_WHEEL_IN = 2.0;   // GUESS: tracking wheel diameter
 constexpr double TRACKING_OFFSET_IN = 0;    // GUESS: tracking wheel left (-) / right (+) of center
 constexpr double GRABBER_OFFSET_IN = 10.0;  // GUESS: robot center to the grabber
+constexpr double FRONT_OFFSET_IN = 9.0;    // GUESS: robot center to the front edge (18 in long robot)
 constexpr double DRIVER_TURN_SCALE = 0.8;   // GUESS: 1 = full turn speed
 
 // ---------- Auton start spot ----------
@@ -85,6 +86,8 @@ constexpr bool SCORE_SPIN_WHILE_RAISING = false;  // GUESS
 
 // ---------- Auton stack heights ----------
 constexpr double STACK_CLEAR_DEG = 250;  // GUESS: high enough to pass over 2 standing stacks
+constexpr double SCORE_MID_DEG = 150;    // GUESS: elevator height to score from mid height
+constexpr double SCORE_MAX_DEG = 280;    // GUESS: elevator height to score from max height
 constexpr double STACK_GRAB_DEG = 50;    // FROM CODE ("50 didn't grab it" for UPPER)
 
 // ---------- Stuck check ----------
