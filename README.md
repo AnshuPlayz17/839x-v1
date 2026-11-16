@@ -27,10 +27,14 @@ Robot code for 839X. PROS 4 + LemLib. Game: Override.
 ## Autons
 
 1. **Red: toggle + 3 stacks**: bottom toggle, preload, then two field stacks on the red goal
-2. **Skills: ALL**: the 60 second skills run (not tested)
-3. **Skills 1 to 4**: the skills run in parts, each with its own start spot (see `src/autons.cpp`)
-4. **Tune: drive 24in**: drive tuning test, result on the brain screen
-5. **Tune: turn 90**: turn tuning test, result on the brain screen
+2. **Skills: ALL**: the 60 second skills run (not tested). Drawing: `docs/skills_sim.png`
+3. **Skills 1: red auton**: same as 1
+4. **Skills 2: cross to loader**: start where part 1 ends
+5. **Skills 3: goal A x2**: start with the front touching the loader
+6. **Skills 4: goal B x4**: start with the front touching the loader
+7. **Skills 5: toggle + park**: start 6 in off goal B
+8. **Tune: drive 24in**: drive tuning test, result on the brain screen
+9. **Tune: turn 90**: turn tuning test, result on the brain screen
 
 Tap the brain screen to pick one. Press X to test it (not on a field).
 
